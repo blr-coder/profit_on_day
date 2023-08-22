@@ -13,8 +13,7 @@ type JsonStruct struct {
 	Users      int     `json:"Users"`
 }
 
-// Revenue общая прибыль
-func (j *JsonStruct) Revenue() float64 {
+func (j *JsonStruct) GetRevenue() float64 {
 	switch true {
 	case j.Ltv7 != 0:
 		return j.Ltv7 * float64(j.Users)
@@ -32,6 +31,14 @@ func (j *JsonStruct) Revenue() float64 {
 	}
 }
 
+func (j *JsonStruct) GetCountry() string {
+	return j.Country
+}
+
+func (j *JsonStruct) GetCampaignID() string {
+	return j.CampaignId
+}
+
 type CsvStruct struct {
 	UserId     int     `csv:"user_id"`
 	CampaignId string  `csv:"CampaignId"`
@@ -45,7 +52,7 @@ type CsvStruct struct {
 	Ltv7       float64 `csv:"Ltv7"`
 }
 
-func (c *CsvStruct) Revenue() float64 {
+func (c *CsvStruct) GetRevenue() float64 {
 	switch true {
 	case c.Ltv7 != 0:
 		return c.Ltv7
@@ -61,4 +68,12 @@ func (c *CsvStruct) Revenue() float64 {
 		// TODO: ???
 		return 0
 	}
+}
+
+func (c *CsvStruct) GetCountry() string {
+	return c.Country
+}
+
+func (c *CsvStruct) GetCampaignID() string {
+	return c.CampaignId
 }

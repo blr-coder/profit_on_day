@@ -7,6 +7,7 @@ import (
 	"github.com/urfave/cli/v2"
 	"log"
 	"os"
+	"path"
 	"profit_on_day/entities"
 )
 
@@ -54,14 +55,38 @@ func main() {
 	}
 }
 
+type DataGetter interface {
+	GetRevenue() float64
+	GetCountry() string
+	GetCampaignID() string
+}
+
 func actionFunc(cCtx *cli.Context) error {
 	fmt.Println("source =", cCtx.String("source"))
 	fmt.Println("model =", cCtx.String("model"))
 	fmt.Println("aggregate =", cCtx.String("aggregate"))
 
-	byDayMap, err := generateAvgByDayMap(cCtx.String("source"), cCtx.String("aggregate"))
+	source := cCtx.String("source")
+	aggregate := cCtx.String("aggregate")
+
+	dataFile, err := os.Open(source)
+	if err != nil {
+		log.Fatal("Error during os.Open: ", err)
+		return err
+	}
+	defer dataFile.Close()
+
+	dataArr, err := GetArr(source)
 	if err != nil {
 		return err
+	}
+
+	revenuesByAggMap := dataArr.ToAggMap(aggregate)
+
+	byDayMap := make(map[string]float64)
+	for agg, revenues := range revenuesByAggMap {
+		// среднее значение за один день
+		byDayMap[agg] = arrSum(revenues) / float64(len(revenues))
 	}
 
 	fmt.Println("Среднее за 1 день, исходя из статистики за 7 дней")
@@ -77,92 +102,6 @@ func actionFunc(cCtx *cli.Context) error {
 	return nil
 }
 
-func generateAvgByDayMap(source, aggregate string) (map[string]float64, error) {
-	avgByDayMap := make(map[string]float64)
-
-	revenuesByAggMap := make(map[string][]float64)
-	// TODO: Add better solution for understand source type (.ext)
-	if source == "test_data.json" {
-		// TODO: If we have very big file we should read it by strings
-		content, err := os.ReadFile(fmt.Sprintf("./%s", source))
-		if err != nil {
-			log.Println("Error when opening file: ", err)
-			return nil, err
-		}
-
-		var payload []entities.JsonStruct
-		err = json.Unmarshal(content, &payload)
-		if err != nil {
-			log.Fatal("Error during Unmarshal(): ", err)
-			return nil, err
-		}
-
-		for _, sourceStruct := range payload {
-			revenue := sourceStruct.Revenue()
-
-			if aggregate == aggregateValueCountry {
-				_, ok := revenuesByAggMap[sourceStruct.Country]
-				if ok {
-					revenuesByAggMap[sourceStruct.Country] = append(revenuesByAggMap[sourceStruct.Country], revenue)
-					continue
-				}
-
-				revenuesByAggMap[sourceStruct.Country] = []float64{revenue}
-			} else {
-				_, ok := revenuesByAggMap[sourceStruct.CampaignId]
-				if ok {
-					revenuesByAggMap[sourceStruct.CampaignId] = append(revenuesByAggMap[sourceStruct.CampaignId], revenue)
-					continue
-				}
-
-				revenuesByAggMap[sourceStruct.CampaignId] = []float64{revenue}
-			}
-		}
-	} else {
-		content, err := os.Open("test_data.csv")
-		if err != nil {
-			panic(err)
-		}
-		defer content.Close()
-
-		var payload []entities.CsvStruct
-		err = gocsv.Unmarshal(content, &payload)
-		if err != nil {
-			log.Fatal("Error during Unmarshal(): ", err)
-			return nil, err
-		}
-
-		for _, sourceStruct := range payload {
-			revenue := sourceStruct.Revenue()
-
-			if aggregate == aggregateValueCountry {
-				_, ok := revenuesByAggMap[sourceStruct.Country]
-				if ok {
-					revenuesByAggMap[sourceStruct.Country] = append(revenuesByAggMap[sourceStruct.Country], revenue)
-					continue
-				}
-
-				revenuesByAggMap[sourceStruct.Country] = []float64{revenue}
-			} else {
-				_, ok := revenuesByAggMap[sourceStruct.CampaignId]
-				if ok {
-					revenuesByAggMap[sourceStruct.CampaignId] = append(revenuesByAggMap[sourceStruct.CampaignId], revenue)
-					continue
-				}
-
-				revenuesByAggMap[sourceStruct.CampaignId] = []float64{revenue}
-			}
-		}
-	}
-
-	for agg, revenues := range revenuesByAggMap {
-		// среднее значение за одни день
-		avgByDayMap[agg] = arrSum(revenues) / float64(len(revenues))
-	}
-
-	return avgByDayMap, nil
-}
-
 func arrSum(arr []float64) float64 {
 	var sum float64
 	idx := 0
@@ -174,4 +113,69 @@ func arrSum(arr []float64) float64 {
 		idx++
 	}
 	return sum
+}
+
+type Revenuers []DataGetter
+
+func (r Revenuers) ToAggMap(aggregate string) map[string][]float64 {
+	revenuesByAggMap := make(map[string][]float64)
+	for _, dataStruct := range r {
+		revenue := dataStruct.GetRevenue()
+
+		if aggregate == aggregateValueCountry {
+			_, ok := revenuesByAggMap[dataStruct.GetCountry()]
+			if ok {
+				revenuesByAggMap[dataStruct.GetCountry()] = append(revenuesByAggMap[dataStruct.GetCountry()], revenue)
+				continue
+			}
+
+			revenuesByAggMap[dataStruct.GetCountry()] = []float64{revenue}
+		} else {
+			_, ok := revenuesByAggMap[dataStruct.GetCampaignID()]
+			if ok {
+				revenuesByAggMap[dataStruct.GetCampaignID()] = append(revenuesByAggMap[dataStruct.GetCampaignID()], revenue)
+				continue
+			}
+
+			revenuesByAggMap[dataStruct.GetCampaignID()] = []float64{revenue}
+		}
+	}
+
+	return revenuesByAggMap
+}
+
+func GetArr(source string) (Revenuers, error) {
+	dataFile, err := os.Open(source)
+	if err != nil {
+		return nil, fmt.Errorf("error during os.Open(): %w", err)
+	}
+	defer dataFile.Close()
+
+	var res []DataGetter
+
+	if path.Ext(source) == ".json" {
+		var dataArr []*entities.JsonStruct
+		err = json.NewDecoder(dataFile).Decode(&dataArr)
+		if err != nil {
+			return nil, fmt.Errorf("error during Decode(): %w", err)
+		}
+
+		for _, jsonStruct := range dataArr {
+			res = append(res, jsonStruct)
+		}
+
+		return res, nil
+	}
+
+	var dataArr []*entities.CsvStruct
+	err = gocsv.Unmarshal(dataFile, &dataArr)
+	if err != nil {
+		return nil, fmt.Errorf("error during Unmarshal(): %w", err)
+	}
+
+	for _, csvStruct := range dataArr {
+		res = append(res, csvStruct)
+	}
+
+	return res, nil
 }
