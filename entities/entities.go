@@ -33,19 +33,32 @@ func (j *JsonStruct) Revenue() float64 {
 }
 
 type CsvStruct struct {
-	UserId     int     `json:"user_id"`
-	CampaignId string  `json:"CampaignId"`
-	Country    string  `json:"Country"`
-	Ltv1       float64 `json:"Ltv1"`
-	Ltv2       float64 `json:"Ltv2"`
-	Ltv3       float64 `json:"Ltv3"`
-	Ltv4       float64 `json:"Ltv4"`
-	Ltv5       float64 `json:"Ltv5"`
-	Ltv6       float64 `json:"Ltv6"`
-	Ltv7       float64 `json:"Ltv7"`
+	UserId     int     `csv:"user_id"`
+	CampaignId string  `csv:"CampaignId"`
+	Country    string  `csv:"Country"`
+	Ltv1       float64 `csv:"Ltv1"`
+	Ltv2       float64 `csv:"Ltv2"`
+	Ltv3       float64 `csv:"Ltv3"`
+	Ltv4       float64 `csv:"Ltv4"`
+	Ltv5       float64 `csv:"Ltv5"`
+	Ltv6       float64 `csv:"Ltv6"`
+	Ltv7       float64 `csv:"Ltv7"`
 }
 
 func (c *CsvStruct) Revenue() float64 {
-
-	return 0.0
+	switch true {
+	case c.Ltv7 != 0:
+		return c.Ltv7
+	case c.Ltv6 != 0:
+		return c.Ltv6
+	case c.Ltv5 != 0:
+		return c.Ltv5
+	case c.Ltv4 != 0:
+		return c.Ltv4
+	case c.Ltv3 != 0:
+		return c.Ltv3
+	default:
+		// TODO: ???
+		return 0
+	}
 }
