@@ -44,3 +44,8 @@ type CsvStruct struct {
 	Ltv6       float64 `json:"Ltv6"`
 	Ltv7       float64 `json:"Ltv7"`
 }
+
+func (c *CsvStruct) Revenue() float64 {
+
+	return 0.0
+}

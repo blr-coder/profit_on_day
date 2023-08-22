@@ -54,36 +54,16 @@ func main() {
 }
 
 func actionFunc(cCtx *cli.Context) error {
-	fmt.Println(cCtx.String("source"))
-	fmt.Println(cCtx.String("model"))
-	fmt.Println(cCtx.String("aggregate"))
+	fmt.Println("source =", cCtx.String("source"))
+	fmt.Println("model =", cCtx.String("model"))
+	fmt.Println("aggregate =", cCtx.String("aggregate"))
 
-	resMap := make(map[string][]float64)
-
-	content, err := os.ReadFile(fmt.Sprintf("./%s", cCtx.String("source")))
+	aggMap, err := generateAggMap(cCtx.String("source"), cCtx.String("aggregate"))
 	if err != nil {
-		log.Fatal("Error when opening file: ", err)
+		return err
 	}
 
-	var payload []entities.JsonStruct
-	err = json.Unmarshal(content, &payload)
-	if err != nil {
-		log.Fatal("Error during Unmarshal(): ", err)
-	}
-
-	for _, sourceStruct := range payload {
-		revenue := sourceStruct.Revenue()
-
-		_, ok := resMap[sourceStruct.Country]
-		if ok {
-			resMap[sourceStruct.Country] = append(resMap[sourceStruct.Country], revenue)
-			continue
-		}
-
-		resMap[sourceStruct.Country] = []float64{revenue}
-	}
-
-	for agg, listByAgg := range resMap {
+	for agg, listByAgg := range aggMap {
 		avgRevenueBy7days := sum(listByAgg) / float64(len(listByAgg))
 		avgRevenueByOneDay := avgRevenueBy7days / 7
 		avgRevenueBy60Days := avgRevenueByOneDay * 60
@@ -93,12 +73,79 @@ func actionFunc(cCtx *cli.Context) error {
 	return nil
 }
 
-func generateResMap(source, model, aggregate string) map[string][]float64 {
+func generateAggMap(source, aggregate string) (map[string][]float64, error) {
 	resMap := make(map[string][]float64)
 
-	// open file, unmarshal data to []struct, loop by []struct and add agg data to resMap
+	// open file,
+	content, err := os.ReadFile(fmt.Sprintf("./%s", source))
+	if err != nil {
+		log.Println("Error when opening file: ", err)
+		return nil, err
+	}
 
-	return resMap
+	if source == "test_data.json" {
+		var payload []entities.JsonStruct
+		err = json.Unmarshal(content, &payload)
+		if err != nil {
+			log.Fatal("Error during Unmarshal(): ", err)
+			return nil, err
+		}
+
+		// loop by []struct and add agg data to resMap
+		for _, sourceStruct := range payload {
+			revenue := sourceStruct.Revenue()
+
+			if aggregate == aggregateValueCountry {
+				_, ok := resMap[sourceStruct.Country]
+				if ok {
+					resMap[sourceStruct.Country] = append(resMap[sourceStruct.Country], revenue)
+					continue
+				}
+
+				resMap[sourceStruct.Country] = []float64{revenue}
+			} else {
+				_, ok := resMap[sourceStruct.CampaignId]
+				if ok {
+					resMap[sourceStruct.CampaignId] = append(resMap[sourceStruct.CampaignId], revenue)
+					continue
+				}
+
+				resMap[sourceStruct.CampaignId] = []float64{revenue}
+			}
+		}
+	} else {
+		var payload []entities.CsvStruct
+		err = json.Unmarshal(content, &payload)
+		if err != nil {
+			log.Fatal("Error during Unmarshal(): ", err)
+			return nil, err
+		}
+
+		// loop by []struct and add agg data to resMap
+		for _, sourceStruct := range payload {
+			revenue := sourceStruct.Revenue()
+
+			if aggregate == aggregateValueCountry {
+				_, ok := resMap[sourceStruct.Country]
+				if ok {
+					resMap[sourceStruct.Country] = append(resMap[sourceStruct.Country], revenue)
+					continue
+				}
+
+				resMap[sourceStruct.Country] = []float64{revenue}
+			} else {
+				_, ok := resMap[sourceStruct.CampaignId]
+				if ok {
+					resMap[sourceStruct.CampaignId] = append(resMap[sourceStruct.CampaignId], revenue)
+					continue
+				}
+
+				resMap[sourceStruct.CampaignId] = []float64{revenue}
+			}
+		}
+	}
+
+	return resMap, nil
 }
 
 func sum(arr []float64) float64 {
