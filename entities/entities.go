@@ -16,15 +16,15 @@ type JsonStruct struct {
 func (j *JsonStruct) GetRevenue() float64 {
 	switch true {
 	case j.Ltv7 != 0:
-		return j.Ltv7 * float64(j.Users)
+		return j.Ltv7 / float64(j.Users)
 	case j.Ltv6 != 0:
-		return j.Ltv6 * float64(j.Users)
+		return j.Ltv6 / float64(j.Users)
 	case j.Ltv5 != 0:
-		return j.Ltv5 * float64(j.Users)
+		return j.Ltv5 / float64(j.Users)
 	case j.Ltv4 != 0:
-		return j.Ltv4 * float64(j.Users)
+		return j.Ltv4 / float64(j.Users)
 	case j.Ltv3 != 0:
-		return j.Ltv3 * float64(j.Users)
+		return j.Ltv3 / float64(j.Users)
 	default:
 		// TODO: ???
 		return 0

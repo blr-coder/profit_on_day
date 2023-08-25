@@ -17,8 +17,6 @@ const (
 )
 
 func main() {
-	fmt.Println("GO!")
-
 	app := &cli.App{
 		Name: "profit utility",
 		Flags: []cli.Flag{
@@ -62,19 +60,9 @@ type DataGetter interface {
 }
 
 func actionFunc(cCtx *cli.Context) error {
-	fmt.Println("source =", cCtx.String("source"))
-	fmt.Println("model =", cCtx.String("model"))
-	fmt.Println("aggregate =", cCtx.String("aggregate"))
-
 	source := cCtx.String("source")
 	aggregate := cCtx.String("aggregate")
-
-	dataFile, err := os.Open(source)
-	if err != nil {
-		log.Fatal("Error during os.Open: ", err)
-		return err
-	}
-	defer dataFile.Close()
+	_ = cCtx.String("model")
 
 	dataArr, err := GetArr(source)
 	if err != nil {
