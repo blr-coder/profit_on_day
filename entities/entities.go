@@ -87,6 +87,10 @@ type CsvStruct struct {
 	Ltv7       float64 `csv:"Ltv7"`
 }
 
+func (c *CsvStruct) getFlippedLtvArr() []float64 {
+	return []float64{c.Ltv7, c.Ltv6, c.Ltv5, c.Ltv4, c.Ltv3, c.Ltv2, c.Ltv1}
+}
+
 func (c *CsvStruct) GetRevenue() float64 {
 	switch true {
 	case c.Ltv7 != 0:
@@ -145,5 +149,14 @@ func (c *CsvStruct) GetLtv(i int) float64 {
 			ltv = c.Ltv7
 		}
 	}
+
+	if ltv == 0 {
+		for _, prevLtv := range c.getFlippedLtvArr() {
+			if prevLtv != 0 {
+				ltv = prevLtv
+			}
+		}
+	}
+
 	return ltv
 }
