@@ -39,6 +39,41 @@ func (j *JsonStruct) GetCampaignID() string {
 	return j.CampaignId
 }
 
+func (j *JsonStruct) GetLtv(i int) float64 {
+	switch i {
+	case 1:
+		if j.Ltv1 != 0 {
+			return j.Ltv1
+		}
+	case 2:
+		if j.Ltv2 != 0 {
+			return j.Ltv2
+		}
+	case 3:
+		if j.Ltv3 != 0 {
+			return j.Ltv3
+		}
+	case 4:
+		if j.Ltv4 != 0 {
+			return j.Ltv4
+		}
+	case 5:
+		if j.Ltv5 != 0 {
+			return j.Ltv5
+		}
+	case 6:
+		if j.Ltv6 != 0 {
+			return j.Ltv6
+		}
+	case 7:
+		if j.Ltv7 != 0 {
+			return j.Ltv7
+		}
+	}
+
+	return 0
+}
+
 type CsvStruct struct {
 	UserId     int     `csv:"user_id"`
 	CampaignId string  `csv:"CampaignId"`
@@ -76,4 +111,39 @@ func (c *CsvStruct) GetCountry() string {
 
 func (c *CsvStruct) GetCampaignID() string {
 	return c.CampaignId
+}
+
+func (c *CsvStruct) GetLtv(i int) float64 {
+	var ltv float64
+	switch i {
+	case 1:
+		if c.Ltv1 != 0 {
+			ltv = c.Ltv1
+		}
+	case 2:
+		if c.Ltv2 != 0 {
+			ltv = c.Ltv2
+		}
+	case 3:
+		if c.Ltv3 != 0 {
+			ltv = c.Ltv3
+		}
+	case 4:
+		if c.Ltv4 != 0 {
+			ltv = c.Ltv4
+		}
+	case 5:
+		if c.Ltv5 != 0 {
+			ltv = c.Ltv5
+		}
+	case 6:
+		if c.Ltv6 != 0 {
+			ltv = c.Ltv6
+		}
+	case 7:
+		if c.Ltv7 != 0 {
+			ltv = c.Ltv7
+		}
+	}
+	return ltv
 }
